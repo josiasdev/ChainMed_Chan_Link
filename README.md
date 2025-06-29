@@ -1,17 +1,17 @@
-# 🏥 ChainMed - Portal DPS Blockchain
+# 🏥 ChainMed - DPS Blockchain Portal
 
-Sistema anti-fraude para Declarações Pessoais de Saúde (DPS) usando blockchain Ethereum Sepolia.
+Anti-fraud system for Personal Health Declarations (DPS) using Ethereum Sepolia blockchain.
 
-## 🌟 Características
+## 🌟 Features
 
-- ✅ **Sistema Anti-Fraude** - Previne declarações duplicadas e omissões
-- ✅ **Blockchain Sepolia** - Dados imutáveis e verificáveis
-- ✅ **Multilíngue** - Português e Inglês
-- ✅ **MetaMask Integration** - Autenticação via carteira
-- ✅ **API REST** - Consultas para seguradoras
-- ✅ **Gestão Familiar** - DPS para múltiplos participantes
+- ✅ **Anti-Fraud System** - Prevents duplicate declarations and omissions
+- ✅ **Sepolia Blockchain** - Immutable and verifiable data
+- ✅ **Multilingual** - Portuguese and English
+- ✅ **MetaMask Integration** - Authentication via wallet
+- ✅ **REST API** - Queries for insurance companies
+- ✅ **Family Management** - DPS for multiple participants
 
-## 🚀 Tecnologias
+## 🚀 Technologies
 
 - **Frontend**: Next.js 15, React, TypeScript, Tailwind CSS
 - **Blockchain**: Solidity, Hardhat, Ethers.js
@@ -19,38 +19,38 @@ Sistema anti-fraude para Declarações Pessoais de Saúde (DPS) usando blockchai
 - **Authentication**: MetaMask Web3
 - **Deployment**: Vercel, Sepolia Testnet
 
-## 📋 Pré-requisitos
+## 📋 Prerequisites
 
-1. **Node.js** (versão 18 ou superior)
-2. **MetaMask** instalado no navegador
-3. **PostgreSQL** (local ou cloud)
-4. **ETH de teste** na rede Sepolia
-5. **Conta Infura** ou **Alchemy** para RPC
+1. **Node.js** (version 18 or higher)
+2. **MetaMask** installed in the browser
+3. **PostgreSQL** (local or cloud)
+4. **Test ETH** on the Sepolia network
+5. **Infura account** or **Alchemy** for RPC
 
-## 🔧 Instalação
+## 🔧 Installation
 
-### 1. Clone o Repositório
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/josiasdev/ChainMed_Chan_Link
 cd ChainMed_Chan_Link
 ```
 
-### 2. Instale as Dependências
+### 2. Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 3. Configure as Variáveis de Ambiente
+### 3. Configure Environment Variables
 
-Copie o arquivo `.env.example` para `.env.local`:
+Copy the `.env.example` file to `.env.local`:
 
 ```bash
 cp .env.example .env.local
 ```
 
-Preencha as variáveis:
+Fill in the variables:
 
 ```env
 # Blockchain Configuration
@@ -71,129 +71,129 @@ JWT_SECRET=sua_chave_jwt_secreta
 API_SECRET_KEY=sua_chave_api_secreta
 ```
 
-### 4. Configure o Banco de Dados
+### 4. Configure the Database
 
-Execute os scripts SQL na ordem:
+Run the SQL scripts in the order:
 
 ```bash
-# 1. Criar tabelas
+# 1. Create tables
 psql -d chainmed -f scripts/01-create-tables.sql
 
-# 2. Inserir dados de teste
+# 2. Insert test data
 psql -d chainmed -f scripts/02-seed-data.sql
 ```
 
-### 5. Compile e Deploy o Smart Contract
+### 5. Compile and Deploy the Smart Contract
 
 ```bash
-# Compilar contratos
+# Compile contracts
 npx hardhat compile
 
-# Deploy na rede Sepolia
+# Deploy on the Sepolia network
 npx hardhat run scripts/deploy-sepolia.js --network sepolia
 
-# Verificar no Etherscan (opcional)
+# Check on Etherscan (optional)
 npx hardhat verify --network sepolia ENDERECO_DO_CONTRATO
 ```
 
-### 6. Execute a Aplicação
+### 6. Run the Application
 
 ```bash
-# Desenvolvimento
+# Development
 npm run dev
 
-# Produção
+# Production
 npm run build
 npm start
 ```
 
-## 📁 Estrutura de Scripts
+## 📁 Script Structure
 
-### Scripts SQL (2 arquivos)
-- `scripts/01-create-tables.sql` - Criação das tabelas e índices
-- `scripts/02-seed-data.sql` - Dados de teste e exemplos
+### SQL Scripts (2 files)
+- `scripts/01-create-tables.sql` - Creating tables and indexes
+- `scripts/02-seed-data.sql` - Test data and examples
 
-### Smart Contract (1 arquivo)
-- `contracts/ChainMedDPS.sol` - Contrato principal otimizado
+### Smart Contract (1 file)
+- `contracts/ChainMedDPS.sol` - Optimized main contract
 
-### Scripts de Deploy
-- `scripts/deploy-sepolia.js` - Deploy automatizado na Sepolia
-- `hardhat.config.js` - Configuração do Hardhat
+### Deploy Scripts
+- `scripts/deploy-sepolia.js` - Automated deployment in Sepolia
+- `hardhat.config.js` - Hardhat configuration
 
-## 🌐 Configuração da Rede Sepolia
+## 🌐 Sepolia Network Setup
 
-### 1. Obter ETH de Teste
+### 1. Get Test ETH
 
-Visite um dos faucets:
+Visit one of the faucets:
 - [Sepolia Faucet](https://sepoliafaucet.com/)
-- [Alchemy Faucet](https://sepoliafaucet.com/)
+- [Alchemy Faucet](https://www.alchemy.com/faucets)
 - [Infura Faucet](https://www.infura.io/faucet)
 
-### 2. Configurar MetaMask
+### 2. Configure MetaMask
 
-Adicione a rede Sepolia no MetaMask:
+Add the Sepolia network to MetaMask:
 
-- **Nome da Rede**: Sepolia Test Network
-- **RPC URL**: https://sepolia.infura.io/v3/SEU_PROJECT_ID
+- **Network Name**: Sepolia Test Network
+- **RPC URL**: https://sepolia.infura.io/v3/YOUR_PROJECT_ID
 - **Chain ID**: 11155111
-- **Símbolo**: SEP
+- **Token**: SEP
 - **Block Explorer**: https://sepolia.etherscan.io/
 
-## 📚 Estrutura do Projeto
+## 📚 Project Structure
 
 ```
 ChainMed_Chan_Link/
-├── app/                    # Next.js App Router
-│   ├── api/               # API Routes
-│   ├── cadastro/          # Página de cadastro
-│   ├── dashboard/         # Dashboard do usuário
-│   ├── dps/              # Páginas de DPS
-│   ├── login/            # Página de login
-│   └── seguradora/       # Dashboard da seguradora
-├── components/            # Componentes React
-│   ├── ui/               # Componentes shadcn/ui
-│   └── language-switcher.tsx
-├── contracts/            # Smart Contract (1 arquivo)
-│   └── ChainMedDPS.sol   # Contrato principal
-├── lib/                  # Utilitários
-│   ├── crypto.ts         # Funções de hash
-│   ├── i18n.ts          # Internacionalização
-│   ├── language-context.tsx
-│   └── web3.ts          # Integração Web3
-├── scripts/              # Scripts SQL e Deploy (3 arquivos)
-│   ├── 01-create-tables.sql  # Schema do banco
-│   ├── 02-seed-data.sql      # Dados de teste
-│   └── deploy-sepolia.js     # Deploy do contrato
-└── hardhat.config.js     # Configuração Hardhat
+├── app/ # Next.js App Router
+│ ├── api/ # API Routes
+│ ├── sign up/ # Sign up page
+│ ├── dashboard/ # User Dashboard
+│ ├── dps/ # DPS Pages
+│ ├── login/ # Login Page
+│ └── insurer/ # Insurer Dashboard
+├── components/ # React Components
+│ ├── ui/ # shadcn/ui Components
+│ └── language-switcher.tsx
+├── contracts/ # Smart Contract (1 file)
+│ └── ChainMedDPS.sol # Main Contract
+├── lib/ # Utilities
+│ ├── crypto.ts # Hash Functions
+│ ├── i18n.ts # Internationalization
+│ ├── language-context.tsx
+│ └── web3.ts # Integration Web3
+├── scripts/ # SQL scripts and Deploy (3 files)
+│ ├── 01-create-tables.sql # Database schema
+│ ├── 02-seed-data.sql # Test data
+│ └── deploy-sepolia.js # Contract deployment
+└── hardhat.config.js # Hardhat configuration
 ```
 
-## 🧪 Dados de Teste
+## 🧪 Test Data
 
-**Usuários de Exemplo:**
+**Example Users:**
 - **João Silva Santos**
-  - Hash: `a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456`
-  - CPF: `12345678901`
+- Hash: `a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456`
+- CPF: `12345678901`
 
 - **Maria Silva Santos**
-  - Hash: `b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567a`
-  - CPF: `98765432109`
+- Hash: `b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567a`
+- CPF: `98765432109`
 
-**API Keys de Teste:**
+**Test API Keys:**
 - `sk_test_1234567890abcdef`
 - `sk_test_abcdef1234567890`
 - `sk_test_fedcba0987654321`
 
-## 🌍 Internacionalização
+## 🌍 Internationalization
 
-O sistema suporta português e inglês. Para trocar idioma:
+The system supports Portuguese and English. To change language:
 
 ```typescript
 const { setLanguage } = useLanguage()
-setLanguage('en') // Inglês
-setLanguage('pt') // Português
+setLanguage('en') // English
+setLanguage('pt') // Portuguese
 ```
 
-## 🚀 Deploy em Produção
+## 🚀 Deploy to Production
 
 ### 1. Vercel (Frontend)
 
@@ -201,41 +201,40 @@ setLanguage('pt') // Português
 npx vercel --prod
 ```
 
-### 2. Mainnet Ethereum
+### 2. Ethereum Mainnet
 
-⚠️ **Atenção**: Deploy na mainnet requer ETH real e auditoria de segurança.
+⚠️ **Attention**: Deploying to the mainnet requires real ETH and a security audit.
 
 ```bash
-# Deploy na mainnet (CUIDADO!)
+# Deploy to mainnet (BE CAREFUL!)
 npx hardhat run scripts/deploy-sepolia.js --network mainnet
 ```
 
 ## 🔧 Troubleshooting
 
-### Problemas Comuns
+### Common Issues
 
-**1. Erro "insufficient funds"**
+**1. "Insufficient funds" error**
 ```bash
-# Verifique saldo ETH na Sepolia
+# Check ETH balance on Sepolia
 ```
 
-**2. Erro "nonce too high"**
+**2. "Nonce too high" error**
 ```bash
-# Reset da conta no MetaMask
+# Reset account in MetaMask
 # Settings > Advanced > Reset Account
 ```
 
-**3. Erro de conexão RPC**
+**3. RPC connection error**
 ```bash
-# Verifique se a URL do Infura está correta
+# Check if the Infura URL is correct
 curl -X POST -H "Content-Type: application/json" \
-  --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
-  https://sepolia.infura.io/v3/SEU_PROJECT_ID
+--data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+https://sepolia.infura.io/v3/YOUR_PROJECT_ID
 ```
 
-## 📞 Suporte
+## 📞 Support
 
 - **Issues**: [GitHub Issues](https://github.com/josiasdev/ChainMed_Chan_Link/issues)
 
-
-**ChainMed** - Revolucionando a saúde com blockchain 🏥⛓️
+**ChainMed** - Revolutionizing healthcare with blockchain 🏥⛓️
