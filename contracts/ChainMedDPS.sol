@@ -1,298 +1,562 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity 0.8.29;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {FunctionsClient} from "@chainlink/contracts/src/v0.8/functions/v1_0_0/FunctionsClient.sol";
+import {FunctionsRequest} from "@chainlink/contracts/src/v0.8/functions/v1_0_0/libraries/FunctionsRequest.sol";
+import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
+
 
 /**
- * @title ChainMedDPS - Sistema Anti-Fraude
- * @dev Smart Contract otimizado para prevenir fraudes em DPS
+ * @title ChainMedDPS - Anti-Fraud System
+ * @dev Smart Contract optimized to prevent DPS fraud
  * @author ChainMed Team
  */
-contract ChainMedDPS is Ownable, ReentrancyGuard {
-    using Counters for Counters.Counter;
-    
-    Counters.Counter private _dpsCounter;
-    
-    // Estrutura para usuários
-    struct Usuario {
-        string nome;
-        string cpfHash; // Hash do CPF para privacidade
-        string hashUsuario;
-        bool ativo;
-        bool ehParticipante;
-        address responsavel;
-        uint256 dataCadastro;
+contract ChainMedDPS is Ownable, ReentrancyGuard, FunctionsClient, AutomationCompatibleInterface {
+    using FunctionsRequest for FunctionsRequest.Request;
+
+    // Custom errors
+    error ChainMedDPS__UserNotActive();
+    error ChainMedDPS__InsuranceNotAuthorized();
+    error ChainMedDPS__DPSNotFound();
+    error ChainMedDPS__NameCannotBeEmpty();
+    error ChainMedDPS__UserAlreadyRegistered();
+    error ChainMedDPS__HashAlreadyUsed();
+    error ChainMedDPS__CPFAlreadyRegistered();
+    error ChainMedDPS__UserDPSNotFound();
+    error ChainMedDPS__NoPermissionToRegisterDPS();
+    error ChainMedDPS__UserNotFound();
+    error ChainMedDPS__InvalidAddress();
+
+    // Estrutura para armazenar dados de registro de usuário pendentes
+    struct PendingUserRegistration {
+        address requester;
+        string name;
+        string cpfHash;
+        string userHash;
+    }
+
+    // Estrutura para armazenar dados de autorização de seguradora pendentes
+    struct PendingInsuranceAuthorization {
+        address insuranceAddress;
+        string name;
+        string cnpj;
+    }
+
+    enum RequestType {
+        NONE,
+        USER_REGISTRATION,
+        INSURANCE_AUTHORIZATION
+    }
+
+    // User structure
+    struct User {
+        string name;
+        string cpfHash; // CPF hash for privacy
+        string userHash;
+        bool active;
+        bool isParticipant;
+        address responsible;
+        uint256 registrationDate;
         uint256[] dpsIds;
     }
     
-    // Estrutura para DPS
+    // DPS structure
     struct DPS {
         uint256 id;
-        address usuario;
-        address responsavel;
+        address user;
+        address responsible;
         string hashDPS;
-        string dadosCriptografados;
+        string encryptedData;
         uint256 timestamp;
-        bool ativa;
-        uint256 totalRespostasPositivas;
+        bool active;
+        uint256 totalPositiveResponses;
     }
     
-    // Estrutura para seguradoras
-    struct Seguradora {
-        string nome;
+    // Insurance company structure
+    struct Insurance {
+        string name;
         string cnpj;
-        bool autorizada;
-        uint256 dataCadastro;
-        uint256 consultasRealizadas;
+        bool authorized;
+        uint256 registrationDate;
+        uint256 queriesPerformed;
     }
+
+    // DPS counter
+    uint256 private s_dpsCounter;
+
+    uint256 private s_userInactivePeriod;
+    uint256 private s_dpsStalePeriod;
+
+    // Main mappings
+    mapping(address => User) private users;
+    mapping(uint256 => DPS) private dpsRegistry;
+    mapping(address => Insurance) private insurances;
+
+    // Mappings for anti-fraud search
+    mapping(string => address) private hashToAddress;
+    mapping(string => address) private cpfHashToAddress;
+    mapping(string => uint256[]) private hashToDPS;
+    mapping(address => uint256[]) private addressToDPS;
     
-    // Mappings principais
-    mapping(address => Usuario) public usuarios;
-    mapping(uint256 => DPS) public dpsRegistry;
-    mapping(address => Seguradora) public seguradoras;
-    
-    // Mappings para busca anti-fraude
-    mapping(string => address) public hashToAddress;
-    mapping(string => address) public cpfHashToAddress;
-    mapping(string => uint256[]) public hashToDPS;
-    mapping(address => uint256[]) public addressToDPS;
-    
-    // Arrays para iteração
-    address[] public usuariosList;
-    address[] public seguradorasList;
-    
-    // Eventos
-    event UsuarioCadastrado(
-        address indexed endereco,
-        string hashUsuario,
-        string nome,
-        bool ehParticipante,
-        address indexed responsavel,
+    // Arrays for iteration
+    address[] private usersList;
+    address[] private insurancesList;
+
+    // Chainlink Functions variables
+    address public immutable i_functionsRouter;
+    bytes32 public lastRequestId;
+    bytes public lastResponse;
+    bytes public lastError;
+    uint64 public immutable i_subscriptionId;
+
+    // Chainlink Automation variables
+    uint256 private immutable i_interval;
+    uint256 private lastTimestamp;
+
+    // Mapeamentos para armazenar dados temporários das requisições
+    mapping(bytes32 => RequestType) public requestTypes;
+    mapping(bytes32 => PendingUserRegistration) public userRegistrationRequests;
+    mapping(bytes32 => PendingInsuranceAuthorization) public insuranceAuthRequests;
+
+    // Events
+    event UserRegistered(
+        address indexed userAddress,
+        string userHash,
+        string name,
+        bool isParticipant,
+        address indexed responsible,
         uint256 timestamp
     );
     
-    event DPSRegistrada(
+    event DPSRegistered(
         uint256 indexed dpsId,
-        address indexed usuario,
-        address indexed responsavel,
+        address indexed user,
+        address indexed responsible,
         string hashDPS,
-        uint256 respostasPositivas,
+        uint256 positiveResponses,
         uint256 timestamp
     );
     
-    event ConsultaRealizada(
-        address indexed seguradora,
-        address indexed usuarioConsultado,
-        string tipoConsulta,
+    event QueryPerformed(
+        address indexed insurance,
+        address indexed queriedUser,
+        string queryType,
         uint256 timestamp
     );
     
-    // Modificadores
-    modifier apenasUsuarioAtivo() {
-        require(usuarios[msg.sender].ativo, "Usuario nao esta ativo");
+    event InsuranceAuthorized(
+        address indexed insurance,
+        string name,
+        string cnpj,
+        uint256 timestamp
+    );
+    
+    event UserRegistrationRequested(bytes32 indexed requestId, address requester, string userHash);
+    event InsuranceVerificationRequested(bytes32 indexed requestId, address insurance, string cnpj);
+
+    // Automation Events
+    event UserDeactivated(address indexed user);
+    event DPSDeactivated(uint256 indexed dpsId);
+
+    // Modifiers
+    modifier onlyActiveUser() {
+        if (!users[msg.sender].active) {
+            revert ChainMedDPS__UserNotActive();
+        }
         _;
     }
     
-    modifier apenasSeguradoraAutorizada() {
-        require(seguradoras[msg.sender].autorizada, "Seguradora nao autorizada");
+    modifier onlyAuthorizedInsurance() {
+        if (!insurances[msg.sender].authorized) {
+            revert ChainMedDPS__InsuranceNotAuthorized();
+        }
         _;
     }
     
-    modifier dpsExiste(uint256 _dpsId) {
-        require(_dpsId > 0 && _dpsId <= _dpsCounter.current(), "DPS nao existe");
+    modifier dpsExists(uint256 _dpsId) {
+        if (_dpsId > s_dpsCounter) {
+            revert ChainMedDPS__DPSNotFound();
+        }
         _;
     }
     
-    constructor() {
-        _dpsCounter.increment();
+    constructor(
+        address _functionsRouter,
+        uint64 _subscriptionId,
+        uint256 _updateInterval
+    ) Ownable(msg.sender) FunctionsClient(_functionsRouter) {
+        s_dpsCounter = 0;
+        i_functionsRouter = _functionsRouter;
+        i_subscriptionId = _subscriptionId;
+        i_interval = _updateInterval;
+        lastTimestamp = block.timestamp;
     }
-    
+
     /**
-     * @dev Cadastrar usuário principal
+     * @dev Requests new user registration and CPF verification via Chainlink Functions.
+     * @param _name User's name.
+     * @param _cpf The raw CPF string for off-chain verification. It will be hashed for on-chain storage.
+     * @param _userHash A unique hash for the user.
+     * @param _source The JavaScript source code for the Chainlink Function.
      */
-    function cadastrarUsuarioPrincipal(
-        string memory _nome,
-        string memory _cpfHash,
-        string memory _hashUsuario
+    function requestUserRegistration(
+        string memory _name,
+        string memory _cpf,
+        string memory _userHash,
+        string memory _source
     ) external {
-        require(bytes(_nome).length > 0, "Nome nao pode ser vazio");
-        require(!usuarios[msg.sender].ativo, "Usuario ja cadastrado");
-        require(hashToAddress[_hashUsuario] == address(0), "Hash ja utilizado");
-        require(cpfHashToAddress[_cpfHash] == address(0), "CPF ja cadastrado");
+        string memory cpfHash = keccak256ToString(abi.encodePacked(_cpf));
+
+        if (bytes(_name).length == 0) revert ChainMedDPS__NameCannotBeEmpty();
+        if (users[msg.sender].active) revert ChainMedDPS__UserAlreadyRegistered();
+        if (hashToAddress[_userHash] != address(0)) revert ChainMedDPS__HashAlreadyUsed();
+        if (cpfHashToAddress[cpfHash] != address(0)) revert ChainMedDPS__CPFAlreadyRegistered();
+
+        FunctionsRequest.Request memory req;
+        req.initializeRequestForInlineJavaScript(_source);
+        string[] memory args = new string[](1);
+        args[0] = _cpf;
+        req.setArgs(args); // Passa o CPF não-hasheado para o script JS
+
+        bytes32 requestId = _sendRequest(req.encodeCBOR(), i_subscriptionId, 3e5, bytes32(0));
+
+        requestTypes[requestId] = RequestType.USER_REGISTRATION;
+        userRegistrationRequests[requestId] = PendingUserRegistration({
+            requester: msg.sender,
+            name: _name,
+            cpfHash: cpfHash,
+            userHash: _userHash
+        });
+
+        emit UserRegistrationRequested(requestId, msg.sender, _userHash);
+    }
+
+    /**
+     * @dev Callback function for Chainlink Functions
+     */
+    function fulfillRequest(
+        bytes32 _requestId,
+        bytes memory _response,
+        bytes memory _err
+    ) internal override {
+        if (_err.length > 0) {
+            lastError = _err;
+        } else {
+            lastResponse = _response;
+            RequestType reqType = requestTypes[_requestId];
+            bool isValid = abi.decode(_response, (bool));
+
+            if (isValid) {
+                if (reqType == RequestType.USER_REGISTRATION) {
+                    _completeUserRegistration(_requestId);
+                } else if (reqType == RequestType.INSURANCE_AUTHORIZATION) {
+                    _completeInsuranceAuthorization(_requestId);
+                }
+            }
+        }
+        // Limpa os dados da requisição após o processamento
+        delete requestTypes[_requestId];
+        delete userRegistrationRequests[_requestId];
+        delete insuranceAuthRequests[_requestId];
+    }
+
+    function _completeUserRegistration(bytes32 _requestId) private {
+        PendingUserRegistration memory pendingUser = userRegistrationRequests[_requestId];
         
-        usuarios[msg.sender] = Usuario({
-            nome: _nome,
-            cpfHash: _cpfHash,
-            hashUsuario: _hashUsuario,
-            ativo: true,
-            ehParticipante: false,
-            responsavel: address(0),
-            dataCadastro: block.timestamp,
+        users[pendingUser.requester] = User({
+            name: pendingUser.name,
+            cpfHash: pendingUser.cpfHash,
+            userHash: pendingUser.userHash,
+            active: true,
+            isParticipant: false,
+            responsible: address(0),
+            registrationDate: block.timestamp,
             dpsIds: new uint256[](0)
         });
         
-        hashToAddress[_hashUsuario] = msg.sender;
-        cpfHashToAddress[_cpfHash] = msg.sender;
-        usuariosList.push(msg.sender);
+        hashToAddress[pendingUser.userHash] = pendingUser.requester;
+        cpfHashToAddress[pendingUser.cpfHash] = pendingUser.requester;
+        usersList.push(pendingUser.requester);
         
-        emit UsuarioCadastrado(msg.sender, _hashUsuario, _nome, false, address(0), block.timestamp);
+        emit UserRegistered(pendingUser.requester, pendingUser.userHash, pendingUser.name, false, address(0), block.timestamp);
+    }
+
+    function _completeInsuranceAuthorization(bytes32 _requestId) private {
+        PendingInsuranceAuthorization memory pendingAuth = insuranceAuthRequests[_requestId];
+        insurances[pendingAuth.insuranceAddress] = Insurance({
+            name: pendingAuth.name,
+            cnpj: pendingAuth.cnpj,
+            authorized: true,
+            registrationDate: block.timestamp,
+            queriesPerformed: 0
+        });
+        
+        insurancesList.push(pendingAuth.insuranceAddress);
+        emit InsuranceAuthorized(pendingAuth.insuranceAddress, pendingAuth.name, pendingAuth.cnpj, block.timestamp);
+    }
+
+    // Função auxiliar para converter bytes32 para string (necessária para o hash do CPF)
+    function keccak256ToString(bytes memory data) private pure returns (string memory) {
+        return string(abi.encodePacked(keccak256(data)));
+    }
+
+    /**
+     * @dev Register main user
+     */
+    function registerMainUser(
+        string memory _name,
+        string memory _cpfHash,
+        string memory _userHash
+    ) external {
+        if (bytes(_name).length == 0) {
+            revert ChainMedDPS__NameCannotBeEmpty();
+        }
+        if (users[msg.sender].active) {
+            revert ChainMedDPS__UserAlreadyRegistered();
+        }
+        if (hashToAddress[_userHash] != address(0)) {
+            revert ChainMedDPS__HashAlreadyUsed();
+        }
+        if (cpfHashToAddress[_cpfHash] != address(0)) {
+            revert ChainMedDPS__CPFAlreadyRegistered();
+        }
+        
+        users[msg.sender] = User({
+            name: _name,
+            cpfHash: _cpfHash,
+            userHash: _userHash,
+            active: true,
+            isParticipant: false,
+            responsible: address(0),
+            registrationDate: block.timestamp,
+            dpsIds: new uint256[](0)
+        });
+        
+        hashToAddress[_userHash] = msg.sender;
+        cpfHashToAddress[_cpfHash] = msg.sender;
+        usersList.push(msg.sender);
+        
+        emit UserRegistered(msg.sender, _userHash, _name, false, address(0), block.timestamp);
     }
     
     /**
-     * @dev Registrar DPS
+     * @dev Register DPS
      */
-    function registrarDPS(
-        address _usuarioDPS,
+    function registerDPS(
+        address _userDPS,
         string memory _hashDPS,
-        string memory _dadosCriptografados,
-        uint256 _respostasPositivas
-    ) external apenasUsuarioAtivo nonReentrant {
-        require(usuarios[_usuarioDPS].ativo, "Usuario da DPS nao existe");
-        require(
-            _usuarioDPS == msg.sender || usuarios[_usuarioDPS].responsavel == msg.sender,
-            "Sem permissao para registrar DPS deste usuario"
-        );
+        string memory _encryptedData,
+        uint256 _positiveResponses
+    ) external nonReentrant onlyActiveUser {
+        if (!users[_userDPS].active) {
+            revert ChainMedDPS__UserDPSNotFound();
+        }
+        if (_userDPS != msg.sender && users[_userDPS].responsible != msg.sender) {
+            revert ChainMedDPS__NoPermissionToRegisterDPS();
+        }
         
-        uint256 dpsId = _dpsCounter.current();
+        uint256 dpsId = s_dpsCounter;
         
         dpsRegistry[dpsId] = DPS({
             id: dpsId,
-            usuario: _usuarioDPS,
-            responsavel: msg.sender,
+            user: _userDPS,
+            responsible: msg.sender,
             hashDPS: _hashDPS,
-            dadosCriptografados: _dadosCriptografados,
+            encryptedData: _encryptedData,
             timestamp: block.timestamp,
-            ativa: true,
-            totalRespostasPositivas: _respostasPositivas
+            active: true,
+            totalPositiveResponses: _positiveResponses
         });
         
-        usuarios[_usuarioDPS].dpsIds.push(dpsId);
-        hashToDPS[usuarios[_usuarioDPS].hashUsuario].push(dpsId);
-        addressToDPS[_usuarioDPS].push(dpsId);
+        users[_userDPS].dpsIds.push(dpsId);
+        hashToDPS[users[_userDPS].userHash].push(dpsId);
+        addressToDPS[_userDPS].push(dpsId);
         
-        _dpsCounter.increment();
+        s_dpsCounter++;
         
-        emit DPSRegistrada(dpsId, _usuarioDPS, msg.sender, _hashDPS, _respostasPositivas, block.timestamp);
+        emit DPSRegistered(dpsId, _userDPS, msg.sender, _hashDPS, _positiveResponses, block.timestamp);
     }
     
     /**
-     * @dev Consultar DPS por hash (seguradoras)
+     * @dev Query DPS by hash (insurance companies)
      */
-    function consultarDPSPorHash(
-        string memory _hashUsuario
-    ) external apenasSeguradoraAutorizada returns (uint256[] memory) {
-        address usuarioEndereco = hashToAddress[_hashUsuario];
-        require(usuarioEndereco != address(0), "Usuario nao encontrado");
+    function queryDPSByHash(
+        string memory _userHash
+    ) external onlyAuthorizedInsurance returns (uint256[] memory) {
+        address userAddress = hashToAddress[_userHash];
+        if (userAddress == address(0)) {
+            revert ChainMedDPS__UserNotFound();
+        }
         
-        seguradoras[msg.sender].consultasRealizadas++;
+        insurances[msg.sender].queriesPerformed++;
         
-        emit ConsultaRealizada(msg.sender, usuarioEndereco, "hash", block.timestamp);
+        emit QueryPerformed(msg.sender, userAddress, "hash", block.timestamp);
         
-        return hashToDPS[_hashUsuario];
+        return hashToDPS[_userHash];
     }
     
     /**
-     * @dev Consultar DPS por CPF (seguradoras)
+     * @dev Query DPS by CPF (insurance companies)
      */
-    function consultarDPSPorCPF(
+    function queryDPSByCPF(
         string memory _cpfHash
-    ) external apenasSeguradoraAutorizada returns (uint256[] memory) {
-        address usuarioEndereco = cpfHashToAddress[_cpfHash];
-        require(usuarioEndereco != address(0), "Usuario nao encontrado");
+    ) external onlyAuthorizedInsurance returns (uint256[] memory) {
+        address userAddress = cpfHashToAddress[_cpfHash];
+        if (userAddress == address(0)) {
+            revert ChainMedDPS__UserNotFound();
+        }
         
-        seguradoras[msg.sender].consultasRealizadas++;
+        insurances[msg.sender].queriesPerformed++;
         
-        emit ConsultaRealizada(msg.sender, usuarioEndereco, "cpf", block.timestamp);
+        emit QueryPerformed(msg.sender, userAddress, "cpf", block.timestamp);
         
-        return addressToDPS[usuarioEndereco];
+        return addressToDPS[userAddress];
     }
     
     /**
-     * @dev Obter detalhes de uma DPS
+     * @dev Get DPS details
      */
-    function obterDPS(uint256 _dpsId) 
+    function getDPS(uint256 _dpsId) 
         external 
         view 
-        apenasSeguradoraAutorizada 
-        dpsExiste(_dpsId) 
+        onlyAuthorizedInsurance 
+        dpsExists(_dpsId) 
         returns (
             uint256 id,
-            address usuario,
-            address responsavel,
+            address user,
+            address responsible,
             string memory hashDPS,
-            string memory dadosCriptografados,
+            string memory encryptedData,
             uint256 timestamp,
-            bool ativa,
-            uint256 respostasPositivas
+            bool active,
+            uint256 positiveResponses
         ) 
     {
         DPS memory dps = dpsRegistry[_dpsId];
         return (
             dps.id,
-            dps.usuario,
-            dps.responsavel,
+            dps.user,
+            dps.responsible,
             dps.hashDPS,
-            dps.dadosCriptografados,
+            dps.encryptedData,
             dps.timestamp,
-            dps.ativa,
-            dps.totalRespostasPositivas
+            dps.active,
+            dps.totalPositiveResponses
         );
     }
     
     /**
-     * @dev Autorizar seguradora (apenas owner)
+     * @dev Authorize insurance company (owner only)
      */
-    function autorizarSeguradora(
-        address _seguradora,
-        string memory _nome,
+    function authorizeInsurance(
+        address _insurance,
+        string memory _name,
         string memory _cnpj
     ) external onlyOwner {
-        require(_seguradora != address(0), "Endereco invalido");
+        if (_insurance == address(0)) {
+            revert ChainMedDPS__InvalidAddress();
+        }
         
-        seguradoras[_seguradora] = Seguradora({
-            nome: _nome,
+        insurances[_insurance] = Insurance({
+            name: _name,
             cnpj: _cnpj,
-            autorizada: true,
-            dataCadastro: block.timestamp,
-            consultasRealizadas: 0
+            authorized: true,
+            registrationDate: block.timestamp,
+            queriesPerformed: 0
         });
         
-        seguradorasList.push(_seguradora);
+        insurancesList.push(_insurance);
+        
+        emit InsuranceAuthorized(_insurance, _name, _cnpj, block.timestamp);
     }
     
     /**
-     * @dev Verificar se usuário existe por hash
+     * @dev Check if user exists by hash
      */
-    function usuarioExistePorHash(string memory _hashUsuario) external view returns (bool) {
-        return hashToAddress[_hashUsuario] != address(0);
+    function userExistsByHash(string memory _userHash) external view returns (bool) {
+        return hashToAddress[_userHash] != address(0);
     }
     
     /**
-     * @dev Verificar se usuário existe por CPF
+     * @dev Check if user exists by CPF
      */
-    function usuarioExistePorCPF(string memory _cpfHash) external view returns (bool) {
+    function userExistsByCPF(string memory _cpfHash) external view returns (bool) {
         return cpfHashToAddress[_cpfHash] != address(0);
     }
     
     /**
-     * @dev Obter estatísticas gerais
+     * @dev Get general statistics
      */
-    function obterEstatisticas() 
+    function getStatistics() 
         external 
         view 
         onlyOwner 
         returns (
-            uint256 totalUsuarios,
+            uint256 totalUsers,
             uint256 totalDPS,
-            uint256 totalSeguradoras
+            uint256 totalInsurances
         ) 
     {
         return (
-            usuariosList.length,
-            _dpsCounter.current() - 1,
-            seguradorasList.length
+            usersList.length,
+            s_dpsCounter,
+            insurancesList.length
         );
+    }
+
+    /**
+     * @dev Chainlink Automation - checks if the upkeep is needed.
+     *      This function is called by the Chainlink Automation network to determine
+     *      if performUpkeep should be executed.
+     */
+    function checkUpkeep(
+        bytes memory /* checkData */
+    ) public view override returns (bool upkeepNeeded, bytes memory /* performData */) {
+        upkeepNeeded = (block.timestamp - lastTimestamp) > i_interval;
+        // No performData is needed, so we return an empty bytes array.
+    }
+
+    /**
+     * @dev Chainlink Automation - performs the upkeep.
+     *      This function deactivates inactive users and old DPS records.
+     *      WARNING: This function iterates over all users. For a very large number of
+     *      users, this could exceed the block gas limit. For production systems with
+     *      thousands of users, consider a batch processing pattern.
+     */
+    function performUpkeep(bytes calldata /* performData */) external override {
+        // Re-check the condition to ensure it's still valid when performUpkeep is executed.
+        if ((block.timestamp - lastTimestamp) > i_interval) {
+            lastTimestamp = block.timestamp;
+
+            // Loop through all registered users
+            for (uint256 i = 0; i < usersList.length; i++) {
+                address userAddress = usersList[i];
+                User storage currentUser = users[userAddress];
+
+                // 1. Deactivate inactive users
+                // Condition: User is active, registered for over a year, and has no DPS records.
+                if (
+                    currentUser.active &&
+                    (block.timestamp - currentUser.registrationDate) > s_userInactivePeriod &&
+                    currentUser.dpsIds.length == 0
+                ) {
+                    currentUser.active = false;
+                    emit UserDeactivated(userAddress);
+                }
+            }
+
+            // 2. Deactivate stale DPS records
+            for (uint256 i = 0; i < s_dpsCounter; i++) {
+                DPS storage dps = dpsRegistry[i];
+
+                // Condition: DPS is active and older than two years.
+                if (dps.active && (block.timestamp - dps.timestamp) > s_dpsStalePeriod) {
+                    dps.active = false;
+                    emit DPSDeactivated(i);
+                }
+            }
+        }
     }
 }

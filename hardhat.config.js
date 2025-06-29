@@ -4,13 +4,13 @@ require("dotenv").config()
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: {
-    version: "0.8.19",
+    version: "0.8.29",
     settings: {
       optimizer: {
         enabled: true,
-        runs: 200,
-      },
-    },
+        runs: 1000 // Um valor mais alto pode reduzir o tamanho do código
+      }
+    }
   },
   networks: {
     // Rede local para desenvolvimento
