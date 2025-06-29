@@ -1,77 +1,77 @@
-# 🚀 Deploy do ChainMed DPS na Rede Sepolia
+# 🚀 Deploying ChainMed DPS on the Sepolia Network
 
-Este guia explica como fazer o deploy do smart contract ChainMedDPS na rede de teste Sepolia.
+This guide explains how to deploy the ChainMedDPS smart contract on the Sepolia test network.
 
-## 📋 Pré-requisitos
+## 📋 Prerequisites
 
-1. **Node.js** (versão 16 ou superior)
-2. **MetaMask** instalado no navegador
-3. **ETH de teste** na rede Sepolia
-4. **Conta Infura** ou **Alchemy** para RPC
-5. **API Key do Etherscan** (opcional, para verificação)
+1. **Node.js** (version 16 or higher)
+2. **MetaMask** installed in the browser
+3. **Test ETH** on the Sepolia network
+4. **Infura account** or **Alchemy** for RPC
+5. **Etherscan API Key** (optional, for verification)
 
-## 🔧 Configuração Inicial
+## 🔧 Initial Configuration
 
-### 1. Instalar Dependências
+### 1. Install Dependencies
 
 ```bash
 npm install --save-dev hardhat @nomicfoundation/hardhat-toolbox
 npm install @openzeppelin/contracts ethers dotenv
 ```
 
-### 2. Configurar Variáveis de Ambiente
+### 2. Configure Environment Variables
 
-Copie o arquivo `.env.example` para `.env` e preencha:
+Copy the `.env.example` file to `.env` and fill in:
 
 ```env
-SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/SEU_PROJECT_ID
-PRIVATE_KEY=sua_chave_privada_aqui
-ETHERSCAN_API_KEY=sua_api_key_etherscan
+SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_PROJECT_ID
+PRIVATE_KEY=your_private_key_here
+ETHERSCAN_API_KEY=your_etherscan_api_key
 ```
 
-⚠️ **IMPORTANTE**: Nunca compartilhe sua chave privada!
+⚠️ **IMPORTANT**: Never share your private key!
 
-### 3. Obter ETH de Teste
+### 3. Get Test ETH
 
-Visite um dos faucets da Sepolia:
+Visit one of Sepolia's faucets:
 - [Sepolia Faucet](https://sepoliafaucet.com/)
 - [Alchemy Sepolia Faucet](https://sepoliafaucet.com/)
 - [Infura Sepolia Faucet](https://www.infura.io/faucet)
 
-Você precisará de pelo menos **0.05 ETH** para o deploy.
+You will need at least **0.05 ETH** for deployment.
 
-## 🚀 Deploy do Contrato
+## 🚀 Contract Deployment
 
-### 1. Compilar o Contrato
+### 1. Compile the Contract
 
 ```bash
 npx hardhat compile
 ```
 
-### 2. Fazer o Deploy
+### 2. Deploy
 
 ```bash
 npx hardhat run scripts/deploy-sepolia.js --network sepolia
 ```
 
-### 3. Verificar no Etherscan (Opcional)
+### 3. Verify on Etherscan (Optional)
 
 ```bash
-npx hardhat verify --network sepolia ENDERECO_DO_CONTRATO
+npx hardhat verify --network sepolia CONTRACT_ADDRESS
 ```
 
-## 📝 Após o Deploy
+## 📝 After Deployment
 
-### 1. Salvar Informações
+### 1. Save Information
 
-Após o deploy bem-sucedido, você receberá:
-- **Endereço do contrato**
-- **Hash da transação**
-- **Link do Etherscan**
+After successful deployment, you will receive:
+- **Contract Address**
+- **Transaction Hash**
+- **Etherscan Link**
 
-### 2. Configurar Frontend
+### 2. Configure Frontend
 
-Atualize o arquivo `.env` com o endereço do contrato:
+Update the `.env` file with the address of the contract:
 
 ```env
 NEXT_PUBLIC_CONTRACT_ADDRESS=0x...
@@ -79,74 +79,71 @@ NEXT_PUBLIC_CHAIN_ID=11155111
 NEXT_PUBLIC_RPC_URL=https://sepolia.infura.io/v3/SEU_PROJECT_ID
 ```
 
-### 3. Autorizar Seguradoras
+### 3. Authorize Insurance Companies
 
-Use a função `autorizarSeguradora()` para autorizar seguradoras:
+Use the `autorizarSeguradora()` function to authorize insurance companies:
 
 ```javascript
 await contract.autorizarSeguradora(
-  "0x...", // endereço da seguradora
-  "Nome da Seguradora",
-  "12345678000195" // CNPJ
-);
-```
+"0x...", // insurance company address
+"Insurance Company Name",
+"12345678000195" // CNPJ
+); ```
 
-## 🧪 Testando o Contrato
+## 🧪 Testing the Contract
 
-### 1. Cadastrar Usuário de Teste
-
-```javascript
-await contract.cadastrarUsuario(
-  "João Silva",
-  "hash_usuario_teste_123"
-);
-```
-
-### 2. Registrar DPS de Teste
+### 1. Register Test User
 
 ```javascript
-await contract.registrarDPS(
-  "hash_dps_teste_456",
-  "dados_criptografados_teste",
-  [] // sem familiares
+await contract.registerUser(
+"João Silva",
+"hash_usuario_teste_123"
 );
 ```
 
-### 3. Consultar DPS
+### 2. Register Test DPS
+
+```javascript
+await contract.registerDPS(
+"hash_dps_teste_456",
+"data_encrypted_test",
+[] // without relatives
+);
+```
+
+### 3. Query DPS
 
 ```javascript
 const dpsIds = await contract.consultarDPSPorHash("hash_usuario_teste_123");
-console.log("DPS encontradas:", dpsIds);
-```
+console.log("DPS found:", dpsIds); ```
 
-## 🔍 Verificação e Monitoramento
+## 🔍 Verification and Monitoring
 
 ### 1. Etherscan
 
-Acesse: `https://sepolia.etherscan.io/address/SEU_ENDERECO_CONTRATO`
+Access: `https://sepolia.etherscan.io/address/YOUR_CONTRACT_ENDEREC`
 
-### 2. Eventos do Contrato
+### 2. Contract Events
 
-Monitore os eventos:
-- `UsuarioCadastrado`
-- `DPSRegistrada`
-- `ConsultaRealizada`
+Monitor the events:
+- `RegisteredUser`
+- `RegisteredDPS`
+- `RequestPerformed`
 
-### 3. Estatísticas
+### 3. Statistics
 
 ```javascript
 const stats = await contract.obterEstatisticas();
 console.log("Total DPS:", stats.totalDPS.toString());
-console.log("Total Usuários:", stats.totalUsuarios.toString());
-```
+console.log("Total Users:", stats.totalUsuarios.toString()); ```
 
-## 🛠️ Comandos Úteis
+## 🛠️ Useful Commands
 
 ```bash
-# Compilar contratos
+# Compile contracts
 npx hardhat compile
 
-# Executar testes
+# Run tests
 npx hardhat test
 
 # Deploy local
@@ -155,77 +152,77 @@ npx hardhat run scripts/deploy-sepolia.js --network localhost
 # Deploy Sepolia
 npx hardhat run scripts/deploy-sepolia.js --network sepolia
 
-# Verificar contrato
-npx hardhat verify --network sepolia ENDERECO_CONTRATO
+# Verify contract
+npx hardhat verify --network sepolia CONTRACT_ENDERECO
 
-# Console interativo
+# Interactive console
 npx hardhat console --network sepolia
 ```
 
 ## 🚨 Troubleshooting
 
-### Erro: "insufficient funds"
-- Verifique se tem ETH suficiente na carteira
-- Obtenha mais ETH de teste nos faucets
+### Error: "insufficient funds"
+- Check if you have enough ETH in your wallet
+- Get more test ETH from faucets
 
-### Erro: "nonce too high"
-- Reset da conta no MetaMask: Settings > Advanced > Reset Account
+### Error: "nonce too high"
+- Reset your MetaMask account: Settings > Advanced > Reset Account
 
-### Erro: "network not supported"
-- Verifique se a rede Sepolia está configurada corretamente
-- Confirme o Chain ID (11155111)
+### Error: "network not supported"
+- Check if the Sepolia network is configured correctly
+- Confirm the Chain ID (11155111)
 
-### Erro: "contract not verified"
-- Execute o comando de verificação no Etherscan
-- Aguarde alguns minutos após o deploy
+### Error: "contract not verified"
+- Run the verification command on Etherscan
+- Wait a few minutes after deploying
 
-## 📚 Recursos Adicionais
+## 📚 Additional Resources
 
-- [Documentação Hardhat](https://hardhat.org/docs)
+- [Hardhat Documentation](https://hardhat.org/docs)
 - [OpenZeppelin Contracts](https://docs.openzeppelin.com/contracts)
 - [Ethers.js Documentation](https://docs.ethers.io/)
 - [Sepolia Testnet Info](https://sepolia.dev/)
 
-## 🔐 Segurança
+## 🔐 Security
 
-- ✅ Use sempre redes de teste primeiro
-- ✅ Mantenha chaves privadas seguras
-- ✅ Faça auditoria do código antes do mainnet
-- ✅ Use multisig para contratos de produção
-- ✅ Implemente rate limiting nas APIs
+- ✅ Always use testnets first
+- ✅ Keep private keys safe
+- ✅ Audit code before mainnet
+- ✅ Use multisig for production contracts
+- ✅ Implement rate limiting in APIs
 
-## 📞 Suporte
+## 📞 Support
 
-Em caso de problemas:
-1. Verifique os logs do Hardhat
-2. Consulte a documentação oficial
-3. Verifique o status da rede Sepolia
-4. Entre em contato com o suporte técnico
+In case of problems:
+1. Check the Hardhat logs
+2. Consult the official documentation
+3. Check the status of the Sepolia network
+4. Contact technical support
 
-Pronto! Agora você tem:
+That's it! Now you have:
 
-## ✅ **Implementações Completas**
+## ✅ **Complete Implementations**
 
-### 🆕 **Página de Cadastro**
-- Formulário completo para usuários e seguradoras
-- Validação de senhas e termos de uso
-- Geração automática de hash único e API keys
-- Interface responsiva e intuitiva
+### 🆕 **Registration Page**
+- Complete form for users and insurers
+- Password validation and terms of use
+- Automatic generation of unique hash and API keys
+- Responsive and intuitive interface
 
 ### 🔗 **Smart Contract Sepolia**
-- Contrato completo com todas as funcionalidades DPS
-- Otimizado para rede Sepolia (testnet)
-- Eventos para monitoramento
-- Funções de segurança e autorização
+- Complete contract with all DPS functionalities
+- Optimized for Sepolia network (testnet)
+- Events for monitoring
+- Security and authorization functions
 
-### 🛠️ **Infraestrutura de Deploy**
-- Scripts automatizados de deploy
-- Configuração Hardhat para Sepolia
-- Integração Web3 no frontend
-- Documentação completa de deploy
+### 🛠️ **Deployment Infrastructure**
+- Automated deployment scripts
+- Hardhat configuration for Sepolia
+- Web3 integration on the frontend
+- Complete deployment documentation
 
-### 🔐 **Recursos de Segurança**
-- Controle de acesso por roles
-- Validação de dados on-chain
-- Proteção contra reentrancy
-- Auditoria de transações
+### 🔐 **Security Features**
+- Role-based access control
+- On-chain data validation
+- Reentrancy protection
+- Transaction auditing
