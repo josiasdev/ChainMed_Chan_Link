@@ -31,28 +31,28 @@ Sistema anti-fraude para Declarações Pessoais de Saúde (DPS) usando blockchai
 
 ### 1. Clone o Repositório
 
-\`\`\`bash
-git clone https://github.com/seu-usuario/chainmed-portal.git
-cd chainmed-portal
-\`\`\`
+```bash
+git clone https://github.com/josiasdev/ChainMed_Chan_Link
+cd ChainMed_Chan_Link
+```
 
 ### 2. Instale as Dependências
 
-\`\`\`bash
+```bash
 npm install
-\`\`\`
+```
 
 ### 3. Configure as Variáveis de Ambiente
 
 Copie o arquivo `.env.example` para `.env.local`:
 
-\`\`\`bash
+```bash
 cp .env.example .env.local
-\`\`\`
+```
 
 Preencha as variáveis:
 
-\`\`\`env
+```env
 # Blockchain Configuration
 SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/SEU_PROJECT_ID
 PRIVATE_KEY=sua_chave_privada_aqui
@@ -69,23 +69,23 @@ DATABASE_URL=postgresql://usuario:senha@localhost:5432/chainmed
 # Application
 JWT_SECRET=sua_chave_jwt_secreta
 API_SECRET_KEY=sua_chave_api_secreta
-\`\`\`
+```
 
 ### 4. Configure o Banco de Dados
 
 Execute os scripts SQL na ordem:
 
-\`\`\`bash
+```bash
 # 1. Criar tabelas
 psql -d chainmed -f scripts/01-create-tables.sql
 
 # 2. Inserir dados de teste
 psql -d chainmed -f scripts/02-seed-data.sql
-\`\`\`
+```
 
 ### 5. Compile e Deploy o Smart Contract
 
-\`\`\`bash
+```bash
 # Compilar contratos
 npx hardhat compile
 
@@ -94,18 +94,18 @@ npx hardhat run scripts/deploy-sepolia.js --network sepolia
 
 # Verificar no Etherscan (opcional)
 npx hardhat verify --network sepolia ENDERECO_DO_CONTRATO
-\`\`\`
+```
 
 ### 6. Execute a Aplicação
 
-\`\`\`bash
+```bash
 # Desenvolvimento
 npm run dev
 
 # Produção
 npm run build
 npm start
-\`\`\`
+```
 
 ## 📁 Estrutura de Scripts
 
@@ -141,8 +141,8 @@ Adicione a rede Sepolia no MetaMask:
 
 ## 📚 Estrutura do Projeto
 
-\`\`\`
-chainmed-portal/
+```
+ChainMed_Chan_Link/
 ├── app/                    # Next.js App Router
 │   ├── api/               # API Routes
 │   ├── cadastro/          # Página de cadastro
@@ -165,7 +165,7 @@ chainmed-portal/
 │   ├── 02-seed-data.sql      # Dados de teste
 │   └── deploy-sepolia.js     # Deploy do contrato
 └── hardhat.config.js     # Configuração Hardhat
-\`\`\`
+```
 
 ## 🧪 Dados de Teste
 
@@ -187,61 +187,55 @@ chainmed-portal/
 
 O sistema suporta português e inglês. Para trocar idioma:
 
-\`\`\`typescript
+```typescript
 const { setLanguage } = useLanguage()
 setLanguage('en') // Inglês
 setLanguage('pt') // Português
-\`\`\`
+```
 
 ## 🚀 Deploy em Produção
 
 ### 1. Vercel (Frontend)
 
-\`\`\`bash
+```bash
 npx vercel --prod
-\`\`\`
+```
 
 ### 2. Mainnet Ethereum
 
 ⚠️ **Atenção**: Deploy na mainnet requer ETH real e auditoria de segurança.
 
-\`\`\`bash
+```bash
 # Deploy na mainnet (CUIDADO!)
 npx hardhat run scripts/deploy-sepolia.js --network mainnet
-\`\`\`
+```
 
 ## 🔧 Troubleshooting
 
 ### Problemas Comuns
 
 **1. Erro "insufficient funds"**
-\`\`\`bash
+```bash
 # Verifique saldo ETH na Sepolia
-\`\`\`
+```
 
 **2. Erro "nonce too high"**
-\`\`\`bash
+```bash
 # Reset da conta no MetaMask
 # Settings > Advanced > Reset Account
-\`\`\`
+```
 
 **3. Erro de conexão RPC**
-\`\`\`bash
+```bash
 # Verifique se a URL do Infura está correta
 curl -X POST -H "Content-Type: application/json" \
   --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
   https://sepolia.infura.io/v3/SEU_PROJECT_ID
-\`\`\`
+```
 
 ## 📞 Suporte
 
-- **Issues**: [GitHub Issues](https://github.com/chainmed/portal/issues)
-- **Email**: suporte@chainmed.com
+- **Issues**: [GitHub Issues](https://github.com/josiasdev/ChainMed_Chan_Link/issues)
 
-## 📄 Licença
-
-MIT License - veja [LICENSE](LICENSE) para detalhes.
-
----
 
 **ChainMed** - Revolucionando a saúde com blockchain 🏥⛓️
