@@ -14,20 +14,20 @@ Este guia explica como fazer o deploy do smart contract ChainMedDPS na rede de t
 
 ### 1. Instalar Dependências
 
-\`\`\`bash
+```bash
 npm install --save-dev hardhat @nomicfoundation/hardhat-toolbox
 npm install @openzeppelin/contracts ethers dotenv
-\`\`\`
+```
 
 ### 2. Configurar Variáveis de Ambiente
 
 Copie o arquivo `.env.example` para `.env` e preencha:
 
-\`\`\`env
+```env
 SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/SEU_PROJECT_ID
 PRIVATE_KEY=sua_chave_privada_aqui
 ETHERSCAN_API_KEY=sua_api_key_etherscan
-\`\`\`
+```
 
 ⚠️ **IMPORTANTE**: Nunca compartilhe sua chave privada!
 
@@ -44,21 +44,21 @@ Você precisará de pelo menos **0.05 ETH** para o deploy.
 
 ### 1. Compilar o Contrato
 
-\`\`\`bash
+```bash
 npx hardhat compile
-\`\`\`
+```
 
 ### 2. Fazer o Deploy
 
-\`\`\`bash
+```bash
 npx hardhat run scripts/deploy-sepolia.js --network sepolia
-\`\`\`
+```
 
 ### 3. Verificar no Etherscan (Opcional)
 
-\`\`\`bash
+```bash
 npx hardhat verify --network sepolia ENDERECO_DO_CONTRATO
-\`\`\`
+```
 
 ## 📝 Após o Deploy
 
@@ -73,51 +73,51 @@ Após o deploy bem-sucedido, você receberá:
 
 Atualize o arquivo `.env` com o endereço do contrato:
 
-\`\`\`env
+```env
 NEXT_PUBLIC_CONTRACT_ADDRESS=0x...
 NEXT_PUBLIC_CHAIN_ID=11155111
 NEXT_PUBLIC_RPC_URL=https://sepolia.infura.io/v3/SEU_PROJECT_ID
-\`\`\`
+```
 
 ### 3. Autorizar Seguradoras
 
 Use a função `autorizarSeguradora()` para autorizar seguradoras:
 
-\`\`\`javascript
+```javascript
 await contract.autorizarSeguradora(
   "0x...", // endereço da seguradora
   "Nome da Seguradora",
   "12345678000195" // CNPJ
 );
-\`\`\`
+```
 
 ## 🧪 Testando o Contrato
 
 ### 1. Cadastrar Usuário de Teste
 
-\`\`\`javascript
+```javascript
 await contract.cadastrarUsuario(
   "João Silva",
   "hash_usuario_teste_123"
 );
-\`\`\`
+```
 
 ### 2. Registrar DPS de Teste
 
-\`\`\`javascript
+```javascript
 await contract.registrarDPS(
   "hash_dps_teste_456",
   "dados_criptografados_teste",
   [] // sem familiares
 );
-\`\`\`
+```
 
 ### 3. Consultar DPS
 
-\`\`\`javascript
+```javascript
 const dpsIds = await contract.consultarDPSPorHash("hash_usuario_teste_123");
 console.log("DPS encontradas:", dpsIds);
-\`\`\`
+```
 
 ## 🔍 Verificação e Monitoramento
 
@@ -134,15 +134,15 @@ Monitore os eventos:
 
 ### 3. Estatísticas
 
-\`\`\`javascript
+```javascript
 const stats = await contract.obterEstatisticas();
 console.log("Total DPS:", stats.totalDPS.toString());
 console.log("Total Usuários:", stats.totalUsuarios.toString());
-\`\`\`
+```
 
 ## 🛠️ Comandos Úteis
 
-\`\`\`bash
+```bash
 # Compilar contratos
 npx hardhat compile
 
@@ -160,7 +160,7 @@ npx hardhat verify --network sepolia ENDERECO_CONTRATO
 
 # Console interativo
 npx hardhat console --network sepolia
-\`\`\`
+```
 
 ## 🚨 Troubleshooting
 
@@ -201,7 +201,6 @@ Em caso de problemas:
 2. Consulte a documentação oficial
 3. Verifique o status da rede Sepolia
 4. Entre em contato com o suporte técnico
-\`\`\`
 
 Pronto! Agora você tem:
 
