@@ -256,7 +256,7 @@ export default function CadastroPage() {
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="termos" checked={aceitouTermos} onCheckedChange={setAceitouTermos} />
+                    <Checkbox id="termos" checked={aceitouTermos} onCheckedChange={(checked) => setAceitouTermos(checked === true)} />
                     <Label htmlFor="termos" className="text-sm">
                       {t.register.acceptTerms}{" "}
                       <Link href="/termos" className="text-blue-600 hover:underline">
@@ -396,7 +396,7 @@ export default function CadastroPage() {
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="termosSeguradora" checked={aceitouTermos} onCheckedChange={setAceitouTermos} />
+                    <Checkbox id="termosSeguradora" checked={aceitouTermos} onCheckedChange={(checked) => setAceitouTermos(checked === true)} />
                     <Label htmlFor="termosSeguradora" className="text-sm">
                       {t.register.acceptTerms}{" "}
                       <Link href="/termos" className="text-blue-600 hover:underline">

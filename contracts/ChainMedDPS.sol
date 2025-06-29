@@ -28,6 +28,7 @@ contract ChainMedDPS is Ownable, ReentrancyGuard, FunctionsClient, AutomationCom
     error ChainMedDPS__NoPermissionToRegisterDPS();
     error ChainMedDPS__UserNotFound();
     error ChainMedDPS__InvalidAddress();
+    error ChainMedDPS__InsuranceAlreadyAuthorized();
 
     // Estrutura para armazenar dados de registro de usuário pendentes
     struct PendingUserRegistration {
@@ -231,6 +232,38 @@ contract ChainMedDPS is Ownable, ReentrancyGuard, FunctionsClient, AutomationCom
         });
 
         emit UserRegistrationRequested(requestId, msg.sender, _userHash);
+    }
+
+    /**
+     * @dev Requests new insurance authorization and CNPJ verification via Chainlink Functions.
+     * @param _name Insurance's name.
+     * @param _cnpj The raw CNPJ string for off-chain verification.
+     * @param _source The JavaScript source code for the Chainlink Function.
+     */
+    function requestInsuranceAuthorization(
+        string memory _name,
+        string memory _cnpj,
+        string memory _source
+    ) external {
+        if (bytes(_name).length == 0) revert ChainMedDPS__NameCannotBeEmpty();
+        if (insurances[msg.sender].authorized) revert ChainMedDPS__InsuranceAlreadyAuthorized();
+
+        FunctionsRequest.Request memory req;
+        req.initializeRequestForInlineJavaScript(_source);
+        string[] memory args = new string[](1);
+        args[0] = _cnpj;
+        req.setArgs(args);
+
+        bytes32 requestId = _sendRequest(req.encodeCBOR(), i_subscriptionId, 300000, bytes32(0));
+
+        requestTypes[requestId] = RequestType.INSURANCE_AUTHORIZATION;
+        insuranceAuthRequests[requestId] = PendingInsuranceAuthorization({
+            insuranceAddress: msg.sender,
+            name: _name,
+            cnpj: _cnpj
+        });
+
+        emit InsuranceVerificationRequested(requestId, msg.sender, _cnpj);
     }
 
     /**
